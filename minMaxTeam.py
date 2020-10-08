@@ -62,14 +62,11 @@ class MinMaxAgent(CaptureAgent):
           bestDist = dist
       return bestAction
 
-    bestValue = -sys.maxsize - 1
-    for action in actions:
-      successor = gameState.generateSuccessor(self.index, action)
-      value = self.getValue(successor, self.depth, 1)
-      if value > bestValue:
-        bestAction = action
-        bestValue = value
-    return bestAction
+    successors = [gameState.generateSuccessor(self.index, action) for action in actions]
+    values = [self.getValue(successor, self.depth, 1) for successor in successors]
+
+    return actions[values.index(max(values))]
+
 
   def getSuccessor(self, gameState, action):
     """
@@ -96,27 +93,21 @@ class MinMaxAgent(CaptureAgent):
       return self.expValue(successor, depth, index)
 
   def maxValue(self, successor, depth, index):
-    bestValue = -sys.maxsize - 1
-    nextIndex = (index + 1) % len(self.agents)
     actions = successor.getLegalActions(self.agents[index])
+    nextSuccessors = [successor.generateSuccessor(self.agents[index], action) for action in actions]
+    nextIndex = (index + 1) % len(self.agents)
+    values = [self.getValue(nextSuccessor, depth, nextIndex) for nextSuccessor in nextSuccessors]
 
-    for action in actions:
-      nextSuccessor = successor.generateSuccessor(self.agents[index], action)
-      value = self.getValue(nextSuccessor, depth, nextIndex)
-      if value > bestValue:
-        bestValue = value
-    return bestValue
+    return max(values)
 
   def expValue(self, successor, depth, index):
-    expValue = 0
-    nextIndex = (index + 1) % len(self.agents)
     actions = successor.getLegalActions(self.agents[index])
-    normalize = 1 / len(actions)
+    nextSuccessors = [successor.generateSuccessor(self.agents[index], action) for action in actions]
+    nextIndex = (index + 1) % len(self.agents)
+    values = [self.getValue(nextSuccessor, depth, nextIndex) for nextSuccessor in nextSuccessors]
 
-    for action in actions:
-      nextSuccessor = successor.generateSuccessor(self.agents[index], action)
-      expValue =+ self.getValue(nextSuccessor, depth, nextIndex) * normalize
-    return expValue
+    normalize = [1 / len(actions) for action in actions]
+    return sum(n * v for n, v in zip(normalize, values))
 
   def evaluate(self, gameState):
     """
